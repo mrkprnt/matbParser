@@ -131,5 +131,4 @@ classdef matbPerfOrganizer < handle
         end
         
     end
-    
 end

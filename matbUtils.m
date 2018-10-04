@@ -11,7 +11,7 @@ classdef(Sealed = true) matbUtils < handle
             % Convert text numbers (e.g. ONE, TWO) to double
             % Limited to ONE, TWO, THREE, FOUR
             
-            output = find(matbUtils.strcmpExt({input},{'ONE  ','TWO  ','THREE','FOUR '})) ;
+            output = find(strcmp(input,{'ONE  ','TWO  ','THREE','FOUR '})) ;
         end
         
         %% loadTxtFile
@@ -26,21 +26,6 @@ classdef(Sealed = true) matbUtils < handle
                 fclose(fileId) ; % Close file
                 error('Unable to load txt file.') ;
             end
-        end
-        
-        %% strcmpExt
-        function output = strcmpExt(s1,s2)
-            % Perform multiple strcmp in inputString
-            % s1 and s2 are cell vector of string
-            % output is logic matrix of size (s1,s2)
-            
-            output = nan(length(s1),length(s2)) ; % Initialize output
-            for s1Idx = 1:length(s1)
-                for s2Idx = 1:length(s2)
-                    output(s1Idx,s2Idx) = strcmp(s1{s1Idx},s2{s2Idx}) ;
-                end
-            end
-            
         end
         
     end

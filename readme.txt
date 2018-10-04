@@ -72,4 +72,4 @@ Will specify, for each subjectTimerange, the trials that happenned during this r
 ----------
 
 CLASS: matbUtils
-This class contain utilities used be matbPerf and matbPerfOrganizer.
+This class contain utilities used by matbPerf and matbPerfOrganizer.

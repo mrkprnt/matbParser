@@ -231,7 +231,7 @@ classdef matbPerf < handle
         end
         
         %% trckAvgRmsd
-        function output = trckAgRmsd(self)
+        function output = trckAvgRmsd(self)
             % Compute the average rmsd on trck
             
             output = mean(self.trck.log.rmsd) ;
