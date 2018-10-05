@@ -1,4 +1,4 @@
-classdef matbPerf < handle
+classdef matbPerf < matlab.mixin.Copyable
     % Performance data from matb
     
     properties
@@ -22,6 +22,7 @@ classdef matbPerf < handle
     
     properties(Hidden = true , Constant = true)
         matbFileTypes = {'COMM','MATB','RATE','RMAN','SYSM','TRCK'} ;
+        existingParsers = {'rman','sysm','trck'} ;
         time0 = 737061 ;
         tankTarget = 2500 ;
         
@@ -140,7 +141,7 @@ classdef matbPerf < handle
                 self.sysm.log.respTime = cellfun(@(x)str2double(x(15:18)),rawFile(lineStart:end-1)) ;
                 
                 % scaleId
-                self.sysm.log.scaleId = cellfun(@(x)matbUtils.textNum2num(x(32:36)),rawFile(lineStart:end-1)) ;
+                self.sysm.log.scaleId = cellfun(@(x)matbUtils.strfindExt(x,{'ONE','TWO','THREE','FOUR'}),rawFile(lineStart:end-1)) ;
                 
                 % tankStatus
                 self.sysm.log.correct = cellfun(@(x)strcmp(x(47:50),'TRUE'),rawFile(lineStart:end-1)) ;
@@ -162,7 +163,7 @@ classdef matbPerf < handle
                 self.trck.log.time_vct = matbPerf.parseTime(rawFile,lineStart) ;
                 
                 % respTime
-                self.trck.log.rmsd = cellfun(@(x)str2double(x(58:63)),rawFile(lineStart:end-1)) ;
+                self.trck.log.rmsd = cellfun(@(x)str2double(x(end-12:end)),rawFile(lineStart:end-1)) ;
                 
             catch
                 warning('Could not parse file correctly.') ;

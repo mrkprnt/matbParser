@@ -61,13 +61,9 @@ parsedFiles: An N-sized array of matbPerf object, each containing parsed data fo
 
 Additionnally, another input can be provided to matbPerfOrganizer. This input can be used to only keep trials that happenned in a certain time range. To do so, call matbPerfOrganizer such as:
 
-mydata = matbPerfOrganizer('\myfolder\',subjectTimerange) ;
+mydata = matbPerfOrganizer('\myfolder\',timerange) ;
 
-Where subjectTimerange is a M-by-2 array of timestamps (start-end; in datenum format). The matbPerfOrganizer will then attempt to only keep MATBII trial that are contained in these ranges. Furthermore, the property subjectTrials, accessed with:
-
-mydata.subjectTrials ;
-
-Will specify, for each subjectTimerange, the trials that happenned during this range.
+Where timerange is a M-by-2 array of timestamps (start-end; in datenum format). The matbPerfOrganizer will only keep trials if the range is within a trial. When using timerange, the property timerangeTrialsMatch will indicate which parsedFiles are associated with each timerange. Additionnally, the timerangeParsedFiles property will contain parsedFile trimmed to match timerange.
 
 ----------
 

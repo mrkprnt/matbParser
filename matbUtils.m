@@ -7,11 +7,15 @@ classdef(Sealed = true) matbUtils < handle
     methods(Static)
         
         %% textNum2num
-        function output = textNum2num(input)
-            % Convert text numbers (e.g. ONE, TWO) to double
-            % Limited to ONE, TWO, THREE, FOUR
+        function output = strfindExt(input,str2find)
+            % Find more than one string
             
-            output = find(strcmp(input,{'ONE  ','TWO  ','THREE','FOUR '})) ;
+            for strIdx = 1:length(str2find)
+                if ~isempty(strfind(input,str2find{strIdx}))
+                    output = strIdx ;
+                    break
+                end
+            end
         end
         
         %% loadTxtFile
