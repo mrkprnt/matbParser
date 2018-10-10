@@ -163,7 +163,7 @@ classdef matbPerf < matlab.mixin.Copyable
                 self.trck.log.time_vct = matbPerf.parseTime(rawFile,lineStart) ;
                 
                 % respTime
-                self.trck.log.rmsd = cellfun(@(x)str2double(x(end-12:end)),rawFile(lineStart:end-1)) ;
+                self.trck.log.rmsd = cellfun(@(x)str2double(matbPerf.strsplitReturn(x,'   ',5)),rawFile(lineStart:end-1)) ;
                 
             catch
                 warning('Could not parse file correctly.') ;
@@ -207,7 +207,11 @@ classdef matbPerf < matlab.mixin.Copyable
             % Provides the correlation coef. "r" between time and respTime
             
             nanLines = isnan(self.sysm.log.respTime) ;
-            output = corr(self.sysm.log.time_vct(~nanLines),self.sysm.log.respTime(~nanLines)) ;
+            if isempty((self.sysm.log.time_vct(~nanLines)))
+                output = nan ;
+            else
+                output = corr(self.sysm.log.time_vct(~nanLines),self.sysm.log.respTime(~nanLines)) ;
+            end
         end
         
         %% sysmAccuracy
@@ -270,6 +274,14 @@ classdef matbPerf < matlab.mixin.Copyable
             time = cellfun(@(x)datenum(x(2:11)),rawFile(lineStart:end-1)) ; % Get date from string
             time = time-matbPerf.time0 ; % Substract so it starts a 0
             time = time*24*3600 ; % Convert from day to seconds
+        end
+        
+        %% strsplitReturn
+        function output = strsplitReturn(x,delimiter,idx)
+            % Return idx of strsplit
+            
+            output = strsplit(x,delimiter) ; % Split
+            output = output{idx} ; % Return one value
         end
         
     end
