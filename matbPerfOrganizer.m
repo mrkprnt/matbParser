@@ -143,6 +143,7 @@ classdef matbPerfOrganizer < handle
             for timerangeIdx = 1:length(self.timerangeTrialsMatch) % For all timerange
                 waitbar(timerangeIdx/length(self.timerangeTrialsMatch),waitBarFig) ; % Update waitbar
                 if length(self.timerangeTrialsMatch{timerangeIdx})~=1 % If more that one parsed file (or none) matches
+                    self.timerangeParsedFiles{timerangeIdx} = matbPerf ; % Initialize empty object
                     continue % Skip
                 end
                 parsedId = self.timerangeTrialsMatch{timerangeIdx} ;

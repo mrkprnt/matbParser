@@ -23,7 +23,7 @@ classdef matbPerf < matlab.mixin.Copyable
     properties(Hidden = true , Constant = true)
         matbFileTypes = {'COMM','MATB','RATE','RMAN','SYSM','TRCK'} ;
         existingParsers = {'rman','sysm','trck'} ;
-        time0 = 737061 ;
+        time0 = datenum('00:00:00.0') ;
         tankTarget = 2500 ;
         
     end
@@ -183,9 +183,31 @@ classdef matbPerf < matlab.mixin.Copyable
         function output = rmanRTargetTankDeviation(self)
             % Provide the correlation coef. "r" between time and deviation
             
-            a = abs(self.rman.log.tankA-self.tankTarget) ;
-            b = abs(self.rman.log.tankB-self.tankTarget) ;
-            output = corr(self.rman.log.time_vct,mean([a,b],2)) ;
+            if isempty(self.rman.log.tankA)|isempty(self.rman.log.tankB)
+                output = nan ;
+            else
+                a = abs(self.rman.log.tankA-self.tankTarget) ;
+                b = abs(self.rman.log.tankB-self.tankTarget) ;
+                if range(mean([a,b],2))==0
+                    output = 0 ; % If level doesn't change, set to 0 (corr output nan otherwise)
+                else
+                    output = corr(self.rman.log.time_vct,mean([a,b],2),'rows','pairwise') ;
+                end
+            end
+        end
+        
+        %% rmanTargetTankDelta
+        function output = rmanTargetTankDelta(self)
+            % Return variation of output level
+            
+            if isempty(self.rman.log.tankA)|isempty(self.rman.log.tankB)
+                output = nan ;
+            else
+                a = abs(self.rman.log.tankA-self.tankTarget) ;
+                b = abs(self.rman.log.tankB-self.tankTarget) ;
+                avgAB = mean([a,b],2) ;
+                output = avgAB(end)-avgAB(1) ;
+            end
         end
         
         %% rmanAvgBackupTankLevel
