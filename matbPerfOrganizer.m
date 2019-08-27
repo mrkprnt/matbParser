@@ -3,21 +3,24 @@ classdef matbPerfOrganizer < handle
     
     properties
         folderPath
+        allFileList
         trialId
         trialDatenumStart
         trialDatenumEnd
         rawFiles
         parsedFiles = {}
+        parsedFilesFeatures = table()
         timerange
         timerangeTrialsMatch = {} 
-        timerangeParsedFiles = {} ;
+        timerangeParsedFiles = {}
+        timerangeParsedFilesFeatures = table()
         
     end   
     
     methods
         
         %% matbPerfOrganizer
-        function self = matbPerfOrganizer(folderPath,timerange)
+        function self = matbPerfOrganizer(folderPath,timerange,doTrim)
             % Constructor method
             
             if nargin==1 % If folderPath provided, load all data do everything
@@ -25,7 +28,10 @@ classdef matbPerfOrganizer < handle
                 self.importRawFiles ;
                 self.identifyDatenum ;
                 self.parseRawFiles ;
+                self.parsedFilesFeatures = matbPerfOrganizer.getFeatureTables(self.parsedFiles) ;
             elseif nargin==2
+                error('Insufficient inputs') ;
+            elseif nargin==3
                 if size(timerange,2)>size(timerange,1) % If provided a row vector
                     timerange = timerange' ; % Rotate vector to have column vector
                 end
@@ -36,7 +42,9 @@ classdef matbPerfOrganizer < handle
                 self.removeUnusedTrials ;
                 self.matchTimerangeTrials ;
                 self.parseRawFiles ;
-                self.getTimerangeParsedFiles ;
+                self.getTimerangeParsedFiles(doTrim) ;
+                self.parsedFilesFeatures = matbPerfOrganizer.getFeatureTables(self.parsedFiles) ;
+                self.timerangeParsedFilesFeatures = matbPerfOrganizer.getFeatureTables(self.timerangeParsedFiles) ;
             else
                 error('Too many inputs.') ;
             end
@@ -47,9 +55,9 @@ classdef matbPerfOrganizer < handle
             % Provide a list (cell of string) of all trialId
             
             self.folderPath = folderPath ; % Save folderPath
-            fileList = dir(self.folderPath) ; % Get dirList
-            fileList([fileList.isdir]) = [] ; % Delete folders from this list
-            self.trialId = cellfun(@(x){x(6:end-4)},{fileList.name}) ; % Extract id from file name
+            self.allFileList = dir(self.folderPath) ; % Get dirList
+            self.allFileList([self.allFileList.isdir]) = [] ; % Delete folders from this list
+            self.trialId = cellfun(@(x){x(6:end-4)},{self.allFileList.name}) ; % Extract id from file name
             self.trialId = unique(self.trialId) ; % Remove duplicate
         end
         
@@ -127,39 +135,76 @@ classdef matbPerfOrganizer < handle
             for trialIdx = 1:length(self.trialId)
                 waitbar(trialIdx/length(self.trialId),waitBarFig) ; % Update waitbar
                 self.parsedFiles{trialIdx} = matbPerf ; % Instance matbPerf class
+                
                 for fileTypeIdx = 1:length(matbPerf.matbFileTypes)
                     self.parsedFiles{trialIdx}.parseFile(self.rawFiles.(matbPerf.matbFileTypes{fileTypeIdx}){trialIdx}) ; % Parse all rawFile for this trial
                 end
+                
+                if self.parsedFiles{trialIdx}.errorFlag
+                    warning('The trial %s could not be parsed correctly.',self.trialId{trialIdx}) ;
+                end
+                
             end
             close(waitBarFig) ;
         end
         
         %% getTimerangeParsedFiles
-        function getTimerangeParsedFiles(self)
-            % For all timerange, get keep only the part of the parsedFile
-            % that matches the timerange
+        function getTimerangeParsedFiles(self,doTrim)
+            % If doTrim, keep only the part of the parsedFile that matches the timerange.
+            % Else, just keep the parsedfile like this.
             
             waitBarFig = waitbar(0,'Trimming parsed files to timerange.','Name','Trimming') ; % Create wait bar
             for timerangeIdx = 1:length(self.timerangeTrialsMatch) % For all timerange
                 waitbar(timerangeIdx/length(self.timerangeTrialsMatch),waitBarFig) ; % Update waitbar
-                if length(self.timerangeTrialsMatch{timerangeIdx})~=1 % If more that one parsed file (or none) matches
+                
+                if length(self.timerangeTrialsMatch{timerangeIdx})>1 % If more that one parsed file
+                    self.timerangeParsedFiles{timerangeIdx} = matbPerf ; % Initialize empty object
+                    warning('More than one parsed files correspond to timerange %d.',timerangeIdx) ;
+                    continue % Skip
+                elseif isempty(self.timerangeTrialsMatch{timerangeIdx})
                     self.timerangeParsedFiles{timerangeIdx} = matbPerf ; % Initialize empty object
                     continue % Skip
                 end
+                
                 parsedId = self.timerangeTrialsMatch{timerangeIdx} ;
                 self.timerangeParsedFiles{timerangeIdx} = self.parsedFiles{parsedId}.copy ; % Copy matching parsedFile
+                
                 for fieldIdx = 1:length(matbPerf.existingParsers) % For all fields with existing parser
                     logFields = fieldnames(self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log) ; % List all fields in log
                     time_vct_inDays = self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log.time_vct/(24*3600) ; % Convert time_vct to days
-                    relevantLines = ...
-                        time_vct_inDays+self.trialDatenumStart(parsedId)>=self.timerange(timerangeIdx,1) &...
-                        time_vct_inDays+self.trialDatenumStart(parsedId)<=self.timerange(timerangeIdx,2) ;
-                    for logFieldIx = 1:length(logFields) % For all the fields in log
-                        self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log.(logFields{logFieldIx}) = ...
-                            self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log.(logFields{logFieldIx})(relevantLines) ; % Keep only relevant lines
+                    
+                    if doTrim
+                        relevantLines = ...
+                            (time_vct_inDays+self.trialDatenumStart(parsedId))>=self.timerange(timerangeIdx,1) &...
+                            (time_vct_inDays+self.trialDatenumStart(parsedId))<=self.timerange(timerangeIdx,2) ;
+                        for logFieldIx = 1:length(logFields) % For all the fields in log
+                            self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log.(logFields{logFieldIx}) = ...
+                                self.timerangeParsedFiles{timerangeIdx}.(matbPerf.existingParsers{fieldIdx}).log.(logFields{logFieldIx})(relevantLines) ; % Keep only relevant lines
+                        end
                     end
+                    
+                end
+                
+            end
+            close(waitBarFig) ;
+        end
+        
+    end
+    
+    methods(Static)
+        
+        %% getFeatureTables
+        function featureTable = getFeatureTables(parsedFileList)
+            % Create tables of features
+            
+            waitBarFig = waitbar(0,'Creating feature table.','Name','Features table') ; % Create wait bar
+            for parsedFileIdx = 1:length(parsedFileList)
+                waitbar(parsedFileIdx/length(parsedFileList),waitBarFig) ; % Update waitbar
+                for featureIdx = 1:length(matbPerf.featureList)
+                    featureTable(parsedFileIdx).(matbPerf.featureList{featureIdx}) = parsedFileList{parsedFileIdx}.(matbPerf.featureList{featureIdx}) ;
                 end
             end
+            featureTable = struct2table(featureTable) ;
             close(waitBarFig) ;
         end
         

@@ -14,9 +14,10 @@ classdef matbPerf < matlab.mixin.Copyable
             'log',struct('time_vct',[],'respTime',[],'scaleId',[],'correct',[])...
             );
         trck = struct(...
-            'info',struct('eventsFilename',[],'pumpFlowRates',[],'tankACons',[],'tankBCons',[]),...
+            'info',struct('eventsFilename',[]),...
             'log',struct('time_vct',[],'rmsd',[])...
             );
+        errorFlag = false
         
     end
     
@@ -25,6 +26,17 @@ classdef matbPerf < matlab.mixin.Copyable
         existingParsers = {'rman','sysm','trck'} ;
         time0 = datenum('00:00:00.0') ;
         tankTarget = 2500 ;
+        featureList = {...
+            'rmanAvgTargetTankDeviation',...
+            'rmanRTargetTankDeviation',...
+            'rmanTargetTankDelta',...
+            'rmanAvgBackupTankLevel',...
+            'sysmAvgRespTime',...
+            'sysmRRespTime',...
+            'sysmAccuracy',...
+            'sysmFalseHitRatio',...
+            'sysmMissRatio',...
+            'trckAvgRmsd'} ; % List of all methods that are features
         
     end
     
@@ -106,8 +118,10 @@ classdef matbPerf < matlab.mixin.Copyable
                 self.rman.log.tankB = cellfun(@(x)str2double(x(63:66)),rawFile(lineStart:end-1)) ;
                 self.rman.log.tankC = cellfun(@(x)str2double(x(72:75)),rawFile(lineStart:end-1)) ;
                 self.rman.log.tankD = cellfun(@(x)str2double(x(81:84)),rawFile(lineStart:end-1)) ;
+                
             catch
                 warning('Could not parse file correctly.') ;
+                self.errorFlag = true ;
             end
         end
         
@@ -147,6 +161,7 @@ classdef matbPerf < matlab.mixin.Copyable
                 self.sysm.log.correct = cellfun(@(x)strcmp(x(47:50),'TRUE'),rawFile(lineStart:end-1)) ;
             catch
                 warning('Could not parse file correctly.') ;
+                self.errorFlag = true ;
             end
         end
         
@@ -167,6 +182,7 @@ classdef matbPerf < matlab.mixin.Copyable
                 
             catch
                 warning('Could not parse file correctly.') ;
+                self.errorFlag = true ;
             end
         end
         
@@ -183,7 +199,7 @@ classdef matbPerf < matlab.mixin.Copyable
         function output = rmanRTargetTankDeviation(self)
             % Provide the correlation coef. "r" between time and deviation
             
-            if isempty(self.rman.log.tankA)|isempty(self.rman.log.tankB)
+            if isempty(self.rman.log.tankA)||isempty(self.rman.log.tankB)
                 output = nan ;
             else
                 a = abs(self.rman.log.tankA-self.tankTarget) ;
@@ -200,7 +216,7 @@ classdef matbPerf < matlab.mixin.Copyable
         function output = rmanTargetTankDelta(self)
             % Return variation of output level
             
-            if isempty(self.rman.log.tankA)|isempty(self.rman.log.tankB)
+            if isempty(self.rman.log.tankA)||isempty(self.rman.log.tankB)
                 output = nan ;
             else
                 a = abs(self.rman.log.tankA-self.tankTarget) ;
@@ -273,6 +289,7 @@ classdef matbPerf < matlab.mixin.Copyable
             % Identify matb fileType
             
             % Check for fileTypes
+            fileCheck = false(1,6) ; % Initialize
             for fileTypeIdx = 1:length(matbPerf.matbFileTypes)
                 fileCheck(fileTypeIdx) = ~isempty(strfind(rawFile{1},matbPerf.matbFileTypes{fileTypeIdx})) ; % Check first line to see if it contain fileType marker
             end

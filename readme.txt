@@ -53,17 +53,19 @@ mydata = matbPerfOrganizer('\myfolder\') ;
 Assuming that MATBII was executed N-times (N-trials), mydata will then contain:
 
 folderPath: The folder used during calling.
+allFileList: List of all files in the folder
 trialId: An N-sized cell of MATBII trial identifier.
 trialDatenumStart: An N-sized array containing the datenum of the trials start.
 trialDatenumEnd: An N-sized array containing the datenum of the trials end.
 rawFiles: A structure containing the 6 log files (in an N-sized cell format).
 parsedFiles: An N-sized array of matbPerf object, each containing parsed data for all 6 files.
+parsedFilesFeatures: A tables of all features for each parsedFiles.
 
-Additionnally, another input can be provided to matbPerfOrganizer. This input can be used to only keep trials that happenned in a certain time range. To do so, call matbPerfOrganizer such as:
+Additionnally, 2 other input can be provided to matbPerfOrganizer. These inputs can be used to only keep trials that happenned in a certain time range. To do so, call matbPerfOrganizer such as:
 
-mydata = matbPerfOrganizer('\myfolder\',timerange) ;
+mydata = matbPerfOrganizer('\myfolder\',timerange,doTrim) ;
 
-Where timerange is a M-by-2 array of timestamps (start-end; in datenum format). The matbPerfOrganizer will only keep trials if the range is within a trial. When using timerange, the property timerangeTrialsMatch will indicate which parsedFiles are associated with each timerange. Additionnally, the timerangeParsedFiles property will contain parsedFile trimmed to match timerange.
+Where timerange is a M-by-2 array of timestamps (start-end; in datenum format). The matbPerfOrganizer will only keep trials if the range is within a trial. When using timerange, the property timerangeTrialsMatch will indicate which parsedFiles are associated with each timerange. Additionnally, if doTrim=true, timerangeParsedFiles property will contain parsedFile trimmed to match timerange. There will also be a timerangeParsedFilesFeatures containing features for all timerangeParsedFiles.
 
 ----------
 
